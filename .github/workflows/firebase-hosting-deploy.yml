@@ -21,7 +21,7 @@ jobs:
       - name: Install Firebase Tools
         run: npm install -g firebase-tools
 
-      - name: Debug: env, node/npm/npx, list files
+      - name: Debug:env, node/npm/npx, list files
         run: |
           echo "== env =="
           env | sort
