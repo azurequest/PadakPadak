@@ -1,5 +1,5 @@
-- name: Setup Firebase credentials (decode from base64 secret and validate)
-        shell:bash
+      - name: Setup Firebase credentials (decode from base64 secret and validate)
+        shell: bash
         run: |
           set -euo pipefail
           F="${{ github.workspace }}/firebase-service-account.json"
@@ -10,22 +10,22 @@
           ls -l "$F"
           echo -n "size(bytes): "; wc -c < "$F" || true
           echo -n "first40chars: "; head -c40 "$F" | sed -e 's/[^[:print:]\t]/./g' || true
+
           # safe python check: prints only metadata + client_email (no private_key)
-          python3 - <<'PY'
-import sys, json
-p = sys.argv[1]
+          python3 - <<PY
+import sys, json, os
+p = os.environ.get("FILENAME", "${F}")
 b = open(p, 'rb').read()
-# last non-whitespace char
 s = b.rstrip()
 lnc = chr(s[-1]) if s else 'EMPTY'
 print("last_non_ws_char:", lnc)
 print("byte_length:", len(b))
 try:
-  obj = json.loads(b.decode('utf-8'))
-  print("JSON_VALID: true")
-  print("client_email:", obj.get("client_email", "(none)"))
+    obj = json.loads(b.decode('utf-8'))
+    print("JSON_VALID: true")
+    print("client_email:", obj.get("client_email", "(none)"))
 except Exception as e:
-  print("JSON_VALID: false")
-  print("JSON_ERROR:", str(e))
-  sys.exit(3)
+    print("JSON_VALID: false")
+    print("JSON_ERROR:", str(e))
+    sys.exit(3)
 PY
