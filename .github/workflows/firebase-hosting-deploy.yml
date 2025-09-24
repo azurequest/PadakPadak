@@ -1,76 +1,31 @@
-name: Deploy to Firebase Hosting
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install Firebase Tools
-        run: npm install -g firebase-tools
-
-      - name: Debug:list workspace and show firebase.json
+      - name: Setup Firebase credentials (decode from base64 secret and validate)
+        shell: bash
         run: |
-          echo "PWD: $(pwd)"
-          ls -la
-          echo "firebase.json exists?"
-          if [ -f firebase.json ]; then echo "yes"; else echo "no"; fi
-          echo "public exists?"
-          if [ -d public ]; then ls -la public || true; else echo "no public"; fi
-
-      - name: Setup Firebase credentials (decode from base64 secret)
-        run: |
-          echo "Decoding FIREBASE_SERVICE_ACCOUNT_B64 to file"
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}" | base64 --decode > "${{ github.workspace }}/firebase-service-account.json"
-          ls -la "${{ github.workspace }}/firebase-service-account.json"
-          wc -c "${{ github.workspace }}/firebase-service-account.json" || true
-
-
-      - name: Inspect written service account file (safe checks)
-        run: |
+          set -euo pipefail
           F="${{ github.workspace }}/firebase-service-account.json"
-          echo "FILE: $F"
-          echo "size(bytes): $(wc -c < "$F" || echo 0)"
-
-          # get first non-whitespace char of first line
-          first_char=$(tr -d '\r' <"$F" | sed -e 's/^[[:space:]]*//' -n '1p' | head -c1 || true)
-          if [ -n "$first_char" ]; then
-            printf 'first_non_ws_char: %s\n' "$first_char"
-          else
-            echo "first_non_ws: EMPTY"
-          fi
-
-          # detect triple backticks at start
-          if head -n1 "$F" | grep -q '^```'; then echo "NOTE: file starts with triple backticks (remove them)"; fi
-
-          # detect literal backslash-n sequences (escaped newlines)
-          if grep -q '\\n' "$F"; then echo "NOTE: file contains literal '\\n' sequences (looks escaped)"; fi
-
-          # detect UTF-8 BOM (EF BB BF)
-          if head -c3 "$F" | od -An -t x1 | tr -d ' \n' | grep -qi '^efbbbf'; then echo "NOTE: file starts with UTF-8 BOM (EF BB BF)"; fi
-
-      - name: Validate service account (print client_email only)
-        run: |
-          # print just the client_email to verify JSON parse without exposing private key
-          node -e "console.log(require(process.env.GITHUB_WORKSPACE + '/firebase-service-account.json').client_email)"
-        env:
-          GITHUB_WORKSPACE: ${{ github.workspace }}
-
-      - name: Deploy to Firebase Hosting (production)
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
-        run: |
-          npx firebase-tools --version
-          npx firebase-tools deploy --only hosting --project padakpadak-d5725 --non-interactive
+          echo "Decoding secret to $F ..."
+          # use printf to avoid echo pitfalls; fail if base64 decode fails
+          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}" | base64 --decode > "$F" || { echo "ERROR: base64 --decode failed"; exit 2; }
+          echo "wrote file; details:"
+          ls -l "$F"
+          echo -n "size(bytes): "; wc -c < "$F" || true
+          echo -n "first40chars: "; head -c40 "$F" | sed -e 's/[^[:print:]\t]/./g' || true
+          # safe python check: prints only metadata + client_email (no private_key)
+          python3 - <<'PY'
+import sys, json
+p = sys.argv[1]
+b = open(p, 'rb').read()
+# last non-whitespace char
+s = b.rstrip()
+lnc = chr(s[-1]) if s else 'EMPTY'
+print("last_non_ws_char:", lnc)
+print("byte_length:", len(b))
+try:
+  obj = json.loads(b.decode('utf-8'))
+  print("JSON_VALID: true")
+  print("client_email:", obj.get("client_email", "(none)"))
+except Exception as e:
+  print("JSON_VALID: false")
+  print("JSON_ERROR:", str(e))
+  sys.exit(3)
+PY
