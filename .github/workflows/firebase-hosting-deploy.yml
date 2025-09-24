@@ -30,13 +30,13 @@ jobs:
           echo "public exists?"
           if [ -d public ]; then ls -la public || true; else echo "no public"; fi
 
-      - name: Setup Firebase credentials (write secret to file)
+         - name: Setup Firebase credentials (decode from base64 secret)
         run: |
-          # write secret contents to file (preserve newlines)
-          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ github.workspace }}/firebase-service-account.json"
+          echo "Decoding FIREBASE_SERVICE_ACCOUNT_B64 to file"
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}" | base64 --decode > "${{ github.workspace }}/firebase-service-account.json"
           ls -la "${{ github.workspace }}/firebase-service-account.json"
-          # show file size (bytes) to verify it was written
           wc -c "${{ github.workspace }}/firebase-service-account.json" || true
+
 
       - name: Inspect written service account file (safe checks)
         run: |
