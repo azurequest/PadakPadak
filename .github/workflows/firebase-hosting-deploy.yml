@@ -21,7 +21,7 @@ jobs:
       - name: Install Firebase Tools
         run: npm install -g firebase-tools
 
-      - name: Debug: show repo tree (short)
+      - name: Debug:show repo tree (short)
         run: |
           echo "PWD: $(pwd)"
           echo "=== root list ==="
