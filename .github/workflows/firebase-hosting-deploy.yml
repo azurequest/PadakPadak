@@ -38,6 +38,37 @@ jobs:
           # show file size (bytes) to verify it was written
           wc -c "${{ github.workspace }}/firebase-service-account.json" || true
 
+      - name: Inspect written service account file (safe checks)
+        run: |
+          F="${{ github.workspace }}/firebase-service-account.json"
+          echo "FILE: $F"
+          echo "size(bytes): $(wc -c < "$F" || true)"
+
+          # find first non-whitespace byte/char (print readable char or byte value)
+          python - <<'PY'
+import sys
+p=sys.argv[1]
+b=open(p,'rb').read()
+for x in b:
+    if x not in (9,10,13,32):
+        if 32<=x<=126:
+            print("first_non_ws_char:", chr(x))
+        else:
+            print("first_non_ws_byte:", x)
+        break
+else:
+    print("first_non_ws: EMPTY")
+PY
+          # detect if file begins with triple backticks
+          if head -n1 "$F" | grep -q '^```'; then echo "NOTE: file starts with triple backticks (remove them)"; fi
+
+          # detect if file contains literal backslash-n sequences (escaped newlines)
+          if grep -q '\\\\n' "$F"; then echo "NOTE: file contains literal '\\n' sequences (looks escaped)"; fi
+
+          # detect UTF-8 BOM (EF BB BF)
+          if head -c3 "$F" | od -An -t x1 | tr -d ' \n' | grep -qi '^efbbbf'; then echo "NOTE: file starts with UTF-8 BOM (EF BB BF)"; fi
+
+
       - name: Validate service account (print client_email only)
         run: |
           # print just the client_email to verify JSON parse without exposing private key
