@@ -40,9 +40,15 @@ jobs:
           ls -la public || echo "no public"
 
 
-      - name: Deploy to Firebase Hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
-          projectId: "padakpadak-d5725"
+            - name: Setup Firebase credentials
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ github.workspace }}/firebase-service-account.json"
+
+      - name: Deploy to Firebase Hosting (production)
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
+        run: |
+          # optional: show version
+          npx firebase-tools --version
+          # deploy to hosting (production/live)
+          npx firebase-tools deploy --only hosting --project padakpadak-d5725 --non-interactive
