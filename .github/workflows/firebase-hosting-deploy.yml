@@ -21,7 +21,7 @@ jobs:
       - name: Install Firebase Tools
         run: npm install -g firebase-tools
 
-      - name: Debug:list workspace and show firebase.json
+      - name: Debug: list workspace and show firebase.json
         run: |
           echo "PWD: $(pwd)"
           ls -la
