@@ -39,10 +39,10 @@ jobs:
           echo "== list public folder =="
           ls -la public || echo "no public"
 
-
-            - name: Setup Firebase credentials
+      - name: Setup Firebase credentials
         run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ github.workspace }}/firebase-service-account.json"
+          # safer write to file preserving newlines
+          printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ github.workspace }}/firebase-service-account.json"
 
       - name: Deploy to Firebase Hosting (production)
         env:
