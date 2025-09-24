@@ -21,34 +21,33 @@ jobs:
       - name: Install Firebase Tools
         run: npm install -g firebase-tools
 
-      - name: Debug:env, node/npm/npx, list files
+      - name: Debug: list workspace and show firebase.json
         run: |
-          echo "== env =="
-          env | sort
-          echo "== node/npm/npx versions =="
-          node -v || true
-          npm -v || true
-          npx -v || true
-          echo "== which npx =="
-          which npx || where npx || true
-          echo "== workspace list =="
-          pwd
+          echo "PWD: $(pwd)"
           ls -la
-          echo "== show firebase.json (if exists) =="
-          if [ -f firebase.json ]; then cat firebase.json; else echo "firebase.json not found"; fi
-          echo "== list public folder =="
-          ls -la public || echo "no public"
+          echo "firebase.json exists?"
+          if [ -f firebase.json ]; then echo "yes"; else echo "no"; fi
+          echo "public exists?"
+          if [ -d public ]; then ls -la public || true; else echo "no public"; fi
 
-      - name: Setup Firebase credentials
+      - name: Setup Firebase credentials (write secret to file)
         run: |
-          # safer write to file preserving newlines
+          # write secret contents to file (preserve newlines)
           printf '%s' "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ github.workspace }}/firebase-service-account.json"
+          ls -la "${{ github.workspace }}/firebase-service-account.json"
+          # show file size (bytes) to verify it was written
+          wc -c "${{ github.workspace }}/firebase-service-account.json" || true
+
+      - name: Validate service account (print client_email only)
+        run: |
+          # print just the client_email to verify JSON parse without exposing private key
+          node -e "console.log(require(process.env.GITHUB_WORKSPACE + '/firebase-service-account.json').client_email)"
+        env:
+          GITHUB_WORKSPACE: ${{ github.workspace }}
 
       - name: Deploy to Firebase Hosting (production)
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
         run: |
-          # optional: show version
           npx firebase-tools --version
-          # deploy to hosting (production/live)
           npx firebase-tools deploy --only hosting --project padakpadak-d5725 --non-interactive
