@@ -50,7 +50,7 @@ jobs:
           ls -l "$F"
           echo -n "size(bytes): "; wc -c < "$F" || true
 
-      - name: Validate service account (safe check: byte length + client_email)
+      - name: Validate service account (safe check:byte length + client_email)
         shell: bash
         run: |
           set -euo pipefail
