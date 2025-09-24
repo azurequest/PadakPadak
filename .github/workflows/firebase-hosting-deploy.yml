@@ -21,7 +21,7 @@ jobs:
       - name: Install Firebase Tools
         run: npm install -g firebase-tools
 
-      - name: Debug: list workspace and show firebase.json
+      - name: Debug:list workspace and show firebase.json
         run: |
           echo "PWD: $(pwd)"
           ls -la
@@ -30,7 +30,7 @@ jobs:
           echo "public exists?"
           if [ -d public ]; then ls -la public || true; else echo "no public"; fi
 
-         - name: Setup Firebase credentials (decode from base64 secret)
+      - name: Setup Firebase credentials (decode from base64 secret)
         run: |
           echo "Decoding FIREBASE_SERVICE_ACCOUNT_B64 to file"
           echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_B64 }}" | base64 --decode > "${{ github.workspace }}/firebase-service-account.json"
