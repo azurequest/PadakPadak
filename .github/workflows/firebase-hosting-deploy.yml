@@ -1,4 +1,4 @@
-      - name: Setup Firebase credentials (decode from base64 secret and validate)
+- name: Setup Firebase credentials (decode from base64 secret and validate)
         shell: bash
         run: |
           set -euo pipefail
