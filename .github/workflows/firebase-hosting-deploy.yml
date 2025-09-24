@@ -1,5 +1,5 @@
 - name: Setup Firebase credentials (decode from base64 secret and validate)
-        shell: bash
+        shell:bash
         run: |
           set -euo pipefail
           F="${{ github.workspace }}/firebase-service-account.json"
